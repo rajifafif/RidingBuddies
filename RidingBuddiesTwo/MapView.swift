@@ -10,10 +10,17 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
+extension CGFloat {
+    func toRadians() -> CGFloat {
+        return self * CGFloat.pi / 180.0
+    }
+}
+
 class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var locationManager: CLLocationManager
     
     @Published var currentLocation: CLLocation?
+    @Published var currentHeading: CLHeading?
     
     override init() {
         locationManager = CLLocationManager()
@@ -21,6 +28,7 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.startUpdatingHeading()
     }
     
     func requestAuthorization() {
@@ -47,6 +55,10 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         if let location = locations.last {
             currentLocation = location
         }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        currentHeading = newHeading
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -151,6 +163,8 @@ struct MapView: UIViewRepresentable {
         
         // Custom Marker Image
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            
+                print("marker")
             if annotation is CustomAnnotation {
                 let currentPositionAnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "CurrentPositionAnnotation")
                 currentPositionAnnotationView.image = UIImage(named: "currentPosition")
@@ -166,6 +180,19 @@ struct MapView: UIViewRepresentable {
             }
             
             return nil
+        }
+        
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard let heading = parent.locationViewModel.currentHeading?.trueHeading else {
+                return
+            }
+            print("ngookkkk")
+            
+            // Rotate the current position marker based on the user's heading
+            if let annotationView = mapView.view(for: userLocation) {
+                print("yeeet")
+                annotationView.transform = CGAffineTransform(rotationAngle: CGFloat(heading).toRadians())
+            }
         }
         
         
@@ -213,10 +240,4 @@ struct MapView: UIViewRepresentable {
         }
     }
     
-}
-
-extension CGFloat {
-    func toRadians() -> CGFloat {
-        return self * CGFloat.pi / 180.0
-    }
 }
