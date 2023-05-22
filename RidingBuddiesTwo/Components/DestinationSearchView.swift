@@ -8,7 +8,10 @@
 import SwiftUI
 
 struct DestinationSearchView: View {
-    @State var searchText: String = ""
+    @Binding var searchText: String
+    @Binding var searchResults: [LocationPlace]
+    var onSearch: () -> Void // Callback closure
+    @Binding var currentDestination: LocationPlace?
     
     @GestureState private var dragState = CGSize.zero
     @State private var position = CGSize.zero
@@ -64,6 +67,12 @@ struct DestinationSearchView: View {
                             TextField("", text: $searchText)
                                 .padding(.horizontal)
                                 .foregroundColor(.black)
+                                .onTapGesture {
+                                    withAnimation {
+                                        height = UIScreen.main.bounds.height - 100
+                                        isExpanded = true
+                                    }
+                                }
                         }
                         .frame(height: 40)
                         .background(Color.gray) // Change the background color here
@@ -72,7 +81,12 @@ struct DestinationSearchView: View {
                         
                         // Search Button
                         Button(action: {
-                            // Button action
+                            withAnimation {
+                                height = UIScreen.main.bounds.height - 100
+                                isExpanded = true
+                            }
+                            
+                            onSearch()
                         }) {
                             Text("Search")
                         }
@@ -87,9 +101,22 @@ struct DestinationSearchView: View {
                     
                     ScrollView{
                         
-                        ForEach([1, 2, 3, 4, 5, 6 , 7], id: \.self) { number in
-                            DestinationCardView()
+//                        ForEach([1, 2, 3, 4, 5, 6 , 7], id: \.self) { number in
+//                            DestinationCardView()
+//                        }
+                        ForEach(searchResults, id: \.self) { locationPlace in
+                            Button(action: {
+                                withAnimation {
+                                    height = 70
+                                    isExpanded = false
+                                }
+                                
+                                currentDestination = locationPlace
+                            }) {
+                                DestinationCardView(locationPlace: locationPlace)
+                            }
                         }
+                        
                     }
                     .opacity(isExpanded ? 1 : 0)
                     
@@ -103,6 +130,6 @@ struct DestinationSearchView: View {
 
 struct DestinationSearchView_Previews: PreviewProvider {
     static var previews: some View {
-        DestinationSearchView()
+        DestinationSearchView(searchText: .constant(""), searchResults: .constant([]), onSearch: {}, currentDestination: .constant(LocationPlace(name: "Default", latitude: 0.3, longitude: 0.3, type: "aksjdn")))
     }
 }

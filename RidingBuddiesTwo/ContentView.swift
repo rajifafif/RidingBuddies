@@ -8,26 +8,35 @@
 import SwiftUI
 import MapKit
 
-struct GasStation: Identifiable {
+struct LocationPlace: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let latitude: Double
     let longitude: Double
+    let type: String?
 }
 
 struct ContentView: View {
     @State private var destinationCoordinate: CLLocationCoordinate2D?
     @State private var showRoute = false
     
-    @StateObject private var locationViewModel = LocationViewModel()
-    @State private var gasStations: [GasStation] = []
     
+    @StateObject private var locationViewModel = LocationViewModel()
+    @State private var locationPlaces: [LocationPlace] = []
+    @State private var searchLocationIsLoading: Bool = false
+    
+//    @State private var gasStations: [GasStation] = []
+    
+    @State private var searchText = ""
     @State private var isShowingSheet = false
+    @State private var searchResults: [LocationPlace] = []
+    
+    @State private var currentDestination: LocationPlace?
     
     var body: some View {
         VStack {
             ZStack{
-                MapView(locationViewModel: locationViewModel, destinationCoordinate: $destinationCoordinate, showRoute: $showRoute, gasStations: $gasStations)
+                MapView(locationViewModel: locationViewModel, destinationCoordinate: $destinationCoordinate, showRoute: $showRoute, locationPlaces: $locationPlaces)
                     .edgesIgnoringSafeArea(.all)
                 
                 HStack{
@@ -35,7 +44,7 @@ struct ContentView: View {
                     
                     VStack{
                         Button(action: {
-                            // Button action
+                            fetchNearestMosque()
                         }) {
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: 70, height: 70)
@@ -47,7 +56,7 @@ struct ContentView: View {
                         }
                         
                         Button(action: {
-                            // Button action
+                            fetchNearestMinimarket()
                         }) {
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: 70, height: 70)
@@ -59,7 +68,7 @@ struct ContentView: View {
                         }
                         
                         Button(action: {
-                            // Button action
+                            fetchNearestGasStationsTwo()
                         }) {
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: 70, height: 70)
@@ -74,6 +83,9 @@ struct ContentView: View {
                         
                         Button(action: {
                             // Button action
+                            print("Showing Route")
+                            showRoute = true
+                            
                         }) {
                             Circle()
                                 .frame(width: 70)
@@ -85,8 +97,7 @@ struct ContentView: View {
                         }
                         
                         Button(action: {
-                            // Button action
-                            isShowingSheet = true
+                            locationViewModel.requestAuthorization()
                         }) {
                             Circle()
                                 .frame(width: 70)
@@ -102,13 +113,23 @@ struct ContentView: View {
                     }
                     .padding()
                 }
-                .sheet(isPresented: $isShowingSheet) {
-                    // Content of the sheet view
-                    SheetView()
-                        .presentationDetents([.large, .medium, .fraction(0.75)])
+//                .sheet(isPresented: $isShowingSheet) {
+//                    // Content of the sheet view
+//                    SheetView()
+//                        .presentationDetents([.large, .medium, .fraction(0.75)])
+//                }
+                
+                if (searchLocationIsLoading) {
+                    LoadingView()
                 }
                 
-                DestinationSearchView()
+                if (currentDestination != nil) {
+                    ActiveDestinationComponent(currentDestination: currentDestination)
+                } else {
+                    DestinationSearchView(searchText: $searchText, searchResults: $searchResults, onSearch: {
+                        searchDestination(queryString: searchText)
+                    }, currentDestination: $currentDestination)
+                }
             }
         }
         .onAppear {
@@ -117,34 +138,101 @@ struct ContentView: View {
         }
     }
     
-    func fetchNearestGasStations() {
+    func fetchNearestByString(queryString: String, completion: @escaping ([LocationPlace]) -> Void) {
         guard let currentLocation = locationViewModel.currentLocation else {
+            completion([])
             return
         }
         
+        var locationPlaces: [LocationPlace] = []
+        
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = "gas station"
+        request.naturalLanguageQuery = queryString
         request.region = MKCoordinateRegion(center: currentLocation.coordinate, latitudinalMeters: 2000, longitudinalMeters: 2000)
         
         let search = MKLocalSearch(request: request)
         search.start { response, error in
             guard let mapItems = response?.mapItems else {
-                print("Error searching for gas stations: \(error?.localizedDescription ?? "")")
+                print("Error searching for locations: \(error?.localizedDescription ?? "")")
+                completion([])
                 return
             }
             
-            let gasStations = mapItems.compactMap { mapItem -> GasStation? in
+            locationPlaces = mapItems.compactMap { mapItem -> LocationPlace? in
                 let name = mapItem.name
                 let latitude = mapItem.placemark.coordinate.latitude
                 let longitude = mapItem.placemark.coordinate.longitude
                 
-                return GasStation(name: name ?? "Gas Station Name", latitude: latitude, longitude: longitude)
+                return LocationPlace(name: name ?? "", latitude: latitude, longitude: longitude, type: "")
             }
             
-            DispatchQueue.main.async {
-                self.gasStations = gasStations
-            }
+            completion(locationPlaces)
         }
+    }
+    
+    func addToPlaces(locationPlaces: [LocationPlace]) {
+        DispatchQueue.main.async {
+            self.locationPlaces = locationPlaces
+        }
+    }
+    
+    func fetchNearestGasStationsTwo() {
+        searchLocationIsLoading = true
+        var _ = fetchNearestByString(queryString: "gas station") { locationPlaces in
+            let gasStations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
+                // Add Type
+                return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "gas-station")
+            }
+            
+            addToPlaces(locationPlaces: gasStations)
+            searchLocationIsLoading = false
+        }
+    }
+    
+    func fetchNearestMosque() {
+        searchLocationIsLoading = true
+        var _ = fetchNearestByString(queryString: "mosque") { locationPlaces in
+            let gasStations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
+                // Add Type
+                return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "mosque")
+            }
+            
+            addToPlaces(locationPlaces: gasStations)
+            searchLocationIsLoading = false
+        }
+    }
+    
+    func fetchNearestMinimarket() {
+        searchLocationIsLoading = true
+        var _ = fetchNearestByString(queryString: "indomaret") { locationPlaces in
+            let gasStations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
+                // Add Type
+                return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "minimarket")
+            }
+            
+            addToPlaces(locationPlaces: gasStations)
+            searchLocationIsLoading = false
+        }
+    }
+    
+    func searchDestination(queryString: String){
+        
+            searchLocationIsLoading = true
+            DispatchQueue.main.async {
+                self.searchResults = []
+            }
+        
+            var _ = fetchNearestByString(queryString: queryString) { locationPlaces in
+                let foundDestinations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
+                    // Add Type
+                    return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "gas-station")
+                }
+                searchLocationIsLoading = false
+                
+                DispatchQueue.main.async {
+                    self.searchResults = foundDestinations
+                }
+            }
     }
     
     struct SheetView: View {
@@ -160,6 +248,14 @@ struct ContentView: View {
                     dismiss()
                 }
                 .padding()
+            }
+        }
+    }
+    
+    struct LoadingView: View {
+        var body: some View {
+            VStack {
+                Text("Loading . . .")
             }
         }
     }

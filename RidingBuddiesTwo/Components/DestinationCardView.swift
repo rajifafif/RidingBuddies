@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct DestinationCardView: View {
+    var locationPlace: LocationPlace
+    
     var body: some View {
         VStack{
             
             HStack{
                 
                 VStack(alignment: .leading){
-                    Text("Location Name")
+                    Text(locationPlace.name)
                         .font(.system(size: 24))
                         .bold()
                     
@@ -36,6 +38,6 @@ struct DestinationCardView: View {
 
 struct DestinationCardView_Previews: PreviewProvider {
     static var previews: some View {
-        DestinationCardView()
+        DestinationCardView(locationPlace: LocationPlace(name: "Hello", latitude: 0.3, longitude: 0.3, type: ""))
     }
 }

@@ -53,6 +53,7 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.last {
+            print("Updating currentLocation")
             currentLocation = location
         }
     }
@@ -66,16 +67,22 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
+
 struct MapView: UIViewRepresentable {
     @ObservedObject var locationViewModel: LocationViewModel
     @Binding var destinationCoordinate: CLLocationCoordinate2D?
     @Binding var showRoute: Bool
     
-    @Binding var gasStations: [GasStation]
+    @Binding var locationPlaces: [LocationPlace]
     
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
+        
+        if let coordinate = locationViewModel.currentLocation?.coordinate {
+            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 3000, longitudinalMeters: 3000)
+            mapView.setRegion(region, animated: true)
+        }
         
         // Add pinch gesture recognizer for zooming
         let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handlePinchGesture(_:)))
@@ -86,33 +93,33 @@ struct MapView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: MKMapView, context: Context) {
+        print("updateUiView")
         // Update the map view here if needed
         if let coordinate = locationViewModel.currentLocation?.coordinate {
-            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 3000, longitudinalMeters: 3000)
             uiView.setRegion(region, animated: true)
-            
-            
+
+
             // Remove previous annotations
             uiView.removeAnnotations(uiView.annotations)
-            
-            let currentPosition = CustomAnnotation(coordinate: coordinate)
 
-            // Create custom annotations for multiple markers
-            let marker1 = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: -6.3026724, longitude: 106.6402357))
-            let marker2 = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: -6.3057863, longitude: 106.6475206))
-//
-//            // Add custom annotations to the map view
-            uiView.addAnnotations([currentPosition, marker1, marker2])
+            // Current Position Annotation
+            let currentPosition = CustomAnnotation(coordinate: coordinate)
             
-            for gasStation in gasStations {
+            let currentPosition2 = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: 2.1, longitude: 3.2))
+
+            // Add custom annotations to the map view
+            uiView.addAnnotations([currentPosition])
+
+            for place in locationPlaces {
                 let annotation = MKPointAnnotation()
-                annotation.coordinate = CLLocationCoordinate2D(latitude: gasStation.latitude, longitude: gasStation.longitude)
-                annotation.title = gasStation.name
+                annotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
+                annotation.title = place.name
                 uiView.addAnnotation(annotation)
             }
-            
+
         }
-        
+
         if let destinationCoordinate = destinationCoordinate, showRoute {
             showDirections(on: uiView, to: destinationCoordinate)
         } else {
@@ -146,6 +153,13 @@ struct MapView: UIViewRepresentable {
         }
     }
     
+    func reCenterMap(_ uiView: MKMapView) {
+        if let coordinate = locationViewModel.currentLocation?.coordinate {
+            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 3000, longitudinalMeters: 3000)
+            uiView.setRegion(region, animated: true)
+        }
+    }
+    
     // MapView Coordinator to handle delegate methods
     class Coordinator: NSObject, MKMapViewDelegate {
         var parent: MapView
@@ -154,6 +168,7 @@ struct MapView: UIViewRepresentable {
             self.parent = parent
         }
         
+        // Route
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             let renderer = MKPolylineRenderer(overlay: overlay)
             renderer.strokeColor = .blue
@@ -163,8 +178,6 @@ struct MapView: UIViewRepresentable {
         
         // Custom Marker Image
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            
-                print("marker")
             if annotation is CustomAnnotation {
                 let currentPositionAnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "CurrentPositionAnnotation")
                 currentPositionAnnotationView.image = UIImage(named: "currentPosition")
@@ -182,15 +195,14 @@ struct MapView: UIViewRepresentable {
             return nil
         }
         
+        // Update
         func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
             guard let heading = parent.locationViewModel.currentHeading?.trueHeading else {
                 return
             }
-            print("ngookkkk")
             
             // Rotate the current position marker based on the user's heading
             if let annotationView = mapView.view(for: userLocation) {
-                print("yeeet")
                 annotationView.transform = CGAffineTransform(rotationAngle: CGFloat(heading).toRadians())
             }
         }
