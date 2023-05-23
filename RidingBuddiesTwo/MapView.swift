@@ -28,8 +28,6 @@ struct MapView: UIViewRepresentable {
     @State private var annotations: [MKPointAnnotation] = []
     
     func makeUIView(context: Context) -> MKMapView {
-        print("Debug : makeUIView")
-    
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
         
@@ -40,8 +38,6 @@ struct MapView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: MKMapView, context: Context) {
-//        print("Debug : updateUIView")
-    
         // Update Tracking Mode when updated
         uiView.userTrackingMode = userTrackingMode
         
@@ -49,13 +45,9 @@ struct MapView: UIViewRepresentable {
         updateAnnotations(on: uiView)
         
         // Show route if enabled
-        print(showRoute)
-//        print(destinationCoordinate)
         if showRoute, let currentDestination = currentDestination {
-            print("showDirection")
             showDirections(on: uiView, to: CLLocationCoordinate2D(latitude: currentDestination.latitude, longitude: currentDestination.longitude))
         } else {
-            print("removeOcerlays")
             uiView.removeOverlays(uiView.overlays) // Remove any existing routes
         }
     }
@@ -94,15 +86,19 @@ struct MapView: UIViewRepresentable {
     }
     
     private func showDirections(on mapView: MKMapView, to destinationCoordinate: CLLocationCoordinate2D) {
-        print("Debug : showDirections")
-    
         guard let userCoordinate = locationViewModel.currentLocation?.coordinate else {
             return
         }
         
+        let sourcePlacemark = MKPlacemark(coordinate: userCoordinate)
+        let destinationPlacemark = MKPlacemark(coordinate: destinationCoordinate)
+        
+        let sourceMapItem = MKMapItem(placemark: sourcePlacemark)
+        let destinationMapItem = MKMapItem(placemark: destinationPlacemark)
+        
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: userCoordinate))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destinationCoordinate))
+        request.source = sourceMapItem
+        request.destination = destinationMapItem
         request.transportType = .automobile
         
         let directions = MKDirections(request: request)
@@ -111,8 +107,15 @@ struct MapView: UIViewRepresentable {
                 return
             }
             
+            // Remove any existing overlays
             mapView.removeOverlays(mapView.overlays)
-            mapView.addOverlay(route.polyline, level: .aboveRoads)
+            
+            // Add the new route overlay
+            mapView.addOverlay(route.polyline)
+            print("add route overlay")
+            
+            // Zoom the map to fit the route
+//            mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 50, right: 50), animated: true)
         }
     }
     
