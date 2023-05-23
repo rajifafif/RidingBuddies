@@ -4,5 +4,7 @@
 <dict>
 	<key>MKDirectionsApplicationSupportedModes</key>
 	<array/>
+	<key>MKMapView.enableSessionBasedMap</key>
+	<true/>
 </dict>
 </plist>

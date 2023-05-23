@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct DestinationSearchView: View {
+    @EnvironmentObject private var locationViewModel: LocationViewModel
+    
     @Binding var searchText: String
-    @Binding var searchResults: [LocationPlace]
+//    @Binding var searchResults: [LocationPlace]
     var onSearch: () -> Void // Callback closure
     @Binding var currentDestination: LocationPlace?
+    @Binding var showRoute: Bool
     
     @GestureState private var dragState = CGSize.zero
     @State private var position = CGSize.zero
@@ -104,14 +107,17 @@ struct DestinationSearchView: View {
 //                        ForEach([1, 2, 3, 4, 5, 6 , 7], id: \.self) { number in
 //                            DestinationCardView()
 //                        }
-                        ForEach(searchResults, id: \.self) { locationPlace in
+                        ForEach(locationViewModel.searchResults, id: \.self) { locationPlace in
                             Button(action: {
                                 withAnimation {
                                     height = 70
                                     isExpanded = false
                                 }
                                 
+                                print("change current Destination to")
+                                print(locationPlace)
                                 currentDestination = locationPlace
+                                showRoute = true
                             }) {
                                 DestinationCardView(locationPlace: locationPlace)
                             }
@@ -130,6 +136,12 @@ struct DestinationSearchView: View {
 
 struct DestinationSearchView_Previews: PreviewProvider {
     static var previews: some View {
-        DestinationSearchView(searchText: .constant(""), searchResults: .constant([]), onSearch: {}, currentDestination: .constant(LocationPlace(name: "Default", latitude: 0.3, longitude: 0.3, type: "aksjdn")))
+        DestinationSearchView(
+            searchText: .constant(""),
+            onSearch: {},
+            currentDestination: .constant(LocationPlace(name: "Default", latitude: 0.3, longitude: 0.3, type: "aksjdn")),
+            showRoute: .constant(false)
+        )
+        .environmentObject(LocationViewModel())
     }
 }
