@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ActiveDestinationComponent: View {
-    @State var currentDestination: LocationPlace?
+    @Binding var currentDestination: LocationPlace?
     
     var body: some View {
         
@@ -45,8 +45,12 @@ struct ActiveDestinationComponent: View {
                                 .foregroundColor(.red)
                                 .frame(width: 50, height: 50)
                             
-                            Text("Exit")
-                                .foregroundColor(.white)
+                            Button(action: {
+                                currentDestination = nil
+                            }) {
+                                Text("Exit")
+                                    .foregroundColor(.white)
+                            }
                         }
                     })
                 }
@@ -60,6 +64,6 @@ struct ActiveDestinationComponent: View {
 struct ActiveDestinationComponent_Previews: PreviewProvider {
     static var previews: some View {
 //        ContentView()
-        ActiveDestinationComponent(currentDestination: LocationPlace(name: "Hello", latitude: 0.3, longitude: 0.3, type: ""))
+        ActiveDestinationComponent(currentDestination: .constant(LocationPlace(name: "Hello", latitude: 0.3, longitude: 0.3, type: "")))
     }
 }

@@ -25,19 +25,26 @@ struct ContentView: View {
     @State private var locationPlaces: [LocationPlace] = []
     @State private var searchLocationIsLoading: Bool = false
     
-//    @State private var gasStations: [GasStation] = []
+    //    @State private var gasStations: [GasStation] = []
     
     @State private var searchText = ""
     @State private var isShowingSheet = false
     @State private var searchResults: [LocationPlace] = []
     
     @State private var currentDestination: LocationPlace?
+    @State private var userTrackingMode: MKUserTrackingMode = .followWithHeading
     
     var body: some View {
         VStack {
             ZStack{
-                MapView(locationViewModel: locationViewModel, destinationCoordinate: $destinationCoordinate, showRoute: $showRoute, locationPlaces: $locationPlaces)
-                    .edgesIgnoringSafeArea(.all)
+                MapView(
+                    locationViewModel: locationViewModel,
+                    destinationCoordinate: $destinationCoordinate,
+                    showRoute: $showRoute,
+                    userTrackingMode: $userTrackingMode,
+                    locationPlaces: $locationPlaces
+                )
+                .edgesIgnoringSafeArea(.all)
                 
                 HStack{
                     Spacer()
@@ -97,7 +104,7 @@ struct ContentView: View {
                         }
                         
                         Button(action: {
-                            locationViewModel.requestAuthorization()
+                            toggleUserTrackingMode()
                         }) {
                             Circle()
                                 .frame(width: 70)
@@ -113,22 +120,22 @@ struct ContentView: View {
                     }
                     .padding()
                 }
-//                .sheet(isPresented: $isShowingSheet) {
-//                    // Content of the sheet view
-//                    SheetView()
-//                        .presentationDetents([.large, .medium, .fraction(0.75)])
-//                }
                 
                 if (searchLocationIsLoading) {
                     LoadingView()
                 }
                 
                 if (currentDestination != nil) {
-                    ActiveDestinationComponent(currentDestination: currentDestination)
+                    ActiveDestinationComponent(currentDestination: $currentDestination)
                 } else {
-                    DestinationSearchView(searchText: $searchText, searchResults: $searchResults, onSearch: {
-                        searchDestination(queryString: searchText)
-                    }, currentDestination: $currentDestination)
+                    DestinationSearchView(
+                        searchText: $searchText,
+                        searchResults: $searchResults,
+                        onSearch: {
+                            searchDestination(queryString: searchText)
+                        },
+                        currentDestination: $currentDestination
+                    )
                 }
             }
         }
@@ -159,6 +166,7 @@ struct ContentView: View {
             }
             
             locationPlaces = mapItems.compactMap { mapItem -> LocationPlace? in
+                print(MKMapItem.forCurrentLocation())
                 let name = mapItem.name
                 let latitude = mapItem.placemark.coordinate.latitude
                 let longitude = mapItem.placemark.coordinate.longitude
@@ -181,7 +189,11 @@ struct ContentView: View {
         var _ = fetchNearestByString(queryString: "gas station") { locationPlaces in
             let gasStations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
                 // Add Type
-                return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "gas-station")
+                return LocationPlace(
+                    name: locationPlace.name,
+                    latitude: locationPlace.latitude,
+                    longitude: locationPlace.longitude,
+                    type: "gas-station")
             }
             
             addToPlaces(locationPlaces: gasStations)
@@ -194,7 +206,11 @@ struct ContentView: View {
         var _ = fetchNearestByString(queryString: "mosque") { locationPlaces in
             let gasStations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
                 // Add Type
-                return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "mosque")
+                return LocationPlace(
+                    name: locationPlace.name,
+                    latitude: locationPlace.latitude,
+                    longitude: locationPlace.longitude,
+                    type: "mosque")
             }
             
             addToPlaces(locationPlaces: gasStations)
@@ -207,7 +223,11 @@ struct ContentView: View {
         var _ = fetchNearestByString(queryString: "indomaret") { locationPlaces in
             let gasStations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
                 // Add Type
-                return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "minimarket")
+                return LocationPlace(
+                    name: locationPlace.name,
+                    latitude: locationPlace.latitude,
+                    longitude: locationPlace.longitude,
+                    type: "minimarket")
             }
             
             addToPlaces(locationPlaces: gasStations)
@@ -217,37 +237,24 @@ struct ContentView: View {
     
     func searchDestination(queryString: String){
         
-            searchLocationIsLoading = true
+        searchLocationIsLoading = true
+        DispatchQueue.main.async {
+            self.searchResults = []
+        }
+        
+        var _ = fetchNearestByString(queryString: queryString) { locationPlaces in
+            let foundDestinations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
+                // Add Type
+                return LocationPlace(
+                    name: locationPlace.name,
+                    latitude: locationPlace.latitude,
+                    longitude: locationPlace.longitude,
+                    type: "gas-station")
+            }
+            searchLocationIsLoading = false
+            
             DispatchQueue.main.async {
-                self.searchResults = []
-            }
-        
-            var _ = fetchNearestByString(queryString: queryString) { locationPlaces in
-                let foundDestinations = locationPlaces.compactMap { locationPlace -> LocationPlace? in
-                    // Add Type
-                    return LocationPlace(name: locationPlace.name, latitude: locationPlace.latitude, longitude: locationPlace.longitude, type: "gas-station")
-                }
-                searchLocationIsLoading = false
-                
-                DispatchQueue.main.async {
-                    self.searchResults = foundDestinations
-                }
-            }
-    }
-    
-    struct SheetView: View {
-        @Environment(\.dismiss) private var dismiss
-        
-        var body: some View {
-            VStack {
-                Text("Sheet View")
-                    .font(.title)
-                    .padding()
-                
-                Button("Close") {
-                    dismiss()
-                }
-                .padding()
+                self.searchResults = foundDestinations
             }
         }
     }
@@ -257,6 +264,19 @@ struct ContentView: View {
             VStack {
                 Text("Loading . . .")
             }
+        }
+    }
+    
+    func toggleUserTrackingMode() {
+        switch userTrackingMode {
+        case .none:
+            userTrackingMode = .follow
+        case .follow:
+            userTrackingMode = .followWithHeading
+        case .followWithHeading:
+            userTrackingMode = .none
+        @unknown default:
+            userTrackingMode = .followWithHeading
         }
     }
 }

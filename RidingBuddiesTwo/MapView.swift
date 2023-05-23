@@ -16,123 +16,88 @@ extension CGFloat {
     }
 }
 
-class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private var locationManager: CLLocationManager
-    
-    @Published var currentLocation: CLLocation?
-    @Published var currentHeading: CLHeading?
-    
-    override init() {
-        locationManager = CLLocationManager()
-        super.init()
-        
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.startUpdatingHeading()
-    }
-    
-    func requestAuthorization() {
-        locationManager.requestWhenInUseAuthorization()
-    }
-    
-    func startUpdatingLocation() {
-        locationManager.startUpdatingLocation()
-    }
-    
-    func stopUpdatingLocation() {
-        locationManager.stopUpdatingLocation()
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        if status == .authorizedWhenInUse {
-            startUpdatingLocation()
-        } else {
-            stopUpdatingLocation()
-        }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.last {
-            print("Updating currentLocation")
-            currentLocation = location
-        }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        currentHeading = newHeading
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location manager error: \(error.localizedDescription)")
-    }
-}
-
-
 struct MapView: UIViewRepresentable {
     @ObservedObject var locationViewModel: LocationViewModel
     @Binding var destinationCoordinate: CLLocationCoordinate2D?
     @Binding var showRoute: Bool
+    @Binding var userTrackingMode: MKUserTrackingMode
     
     @Binding var locationPlaces: [LocationPlace]
     
     func makeUIView(context: Context) -> MKMapView {
+        print("Debug : makeUIView")
+    
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
         
-        if let coordinate = locationViewModel.currentLocation?.coordinate {
-            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 3000, longitudinalMeters: 3000)
-            mapView.setRegion(region, animated: true)
-        }
-        
-        // Add pinch gesture recognizer for zooming
-        let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handlePinchGesture(_:)))
-        mapView.addGestureRecognizer(pinchGesture)
-        
+        // Set Default Tracking Mode
+        mapView.userTrackingMode = userTrackingMode
         
         return mapView
     }
     
     func updateUIView(_ uiView: MKMapView, context: Context) {
-        print("updateUiView")
-        // Update the map view here if needed
-        if let coordinate = locationViewModel.currentLocation?.coordinate {
-            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 3000, longitudinalMeters: 3000)
-            uiView.setRegion(region, animated: true)
+        print("Debug : updateUIView")
+    
+        // Update Tracking Mode when updated
+        uiView.userTrackingMode = userTrackingMode
+        
+//        uiView.removeAnnotations(uiView.annotations)
+//
+//        for place in locationPlaces {
+//            let annotation = MKPointAnnotation()
+//            annotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
+//            annotation.title = place.name
+//            uiView.addAnnotation(annotation)
+//        }
+        
+//        if let coordinate = locationViewModel.currentLocation?.coordinate {
+////            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 3000, longitudinalMeters: 3000)
+//
+//            // Remove previous annotations
+//            uiView.removeAnnotations(uiView.annotations)
+////
+////            // Current Position Annotation
+////            let currentPosition = CustomAnnotation(coordinate: coordinate)
+////
+////            // Add custom annotations to the map view
+////            uiView.addAnnotations([currentPosition])
+////
+//            for place in locationPlaces {
+//                let annotation = MKPointAnnotation()
+//                annotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
+//                annotation.title = place.name
+//                uiView.addAnnotation(annotation)
+//            }
+//
+//        }
 
-
-            // Remove previous annotations
-            uiView.removeAnnotations(uiView.annotations)
-
-            // Current Position Annotation
-            let currentPosition = CustomAnnotation(coordinate: coordinate)
-            
-            let currentPosition2 = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: 2.1, longitude: 3.2))
-
-            // Add custom annotations to the map view
-            uiView.addAnnotations([currentPosition])
-
-            for place in locationPlaces {
-                let annotation = MKPointAnnotation()
-                annotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
-                annotation.title = place.name
-                uiView.addAnnotation(annotation)
-            }
-
-        }
-
-        if let destinationCoordinate = destinationCoordinate, showRoute {
-            showDirections(on: uiView, to: destinationCoordinate)
-        } else {
-            uiView.removeOverlays(uiView.overlays)
+//        if let destinationCoordinate = destinationCoordinate, showRoute {
+//            showDirections(on: uiView, to: destinationCoordinate)
+//        } else {
+//            uiView.removeOverlays(uiView.overlays)
+//        }
+    }
+    
+    private func addAnnotations(to mapView: MKMapView) {
+        for place in locationPlaces {
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
+            annotation.title = place.name
+            mapView.addAnnotation(annotation)
         }
     }
     
     func makeCoordinator() -> Coordinator {
+        print("Debug : makeCoordinator")
+    
         return Coordinator(self)
     }
     
     // Function to show directions from user's current location to the destination coordinate
     private func showDirections(on mapView: MKMapView, to destinationCoordinate: CLLocationCoordinate2D) {
+        print("Debug : showDirections")
+    
         guard let userCoordinate = locationViewModel.currentLocation?.coordinate else {
             return
         }
@@ -207,21 +172,6 @@ struct MapView: UIViewRepresentable {
             }
         }
         
-        
-        @objc func handlePinchGesture(_ gesture: UIPinchGestureRecognizer) {
-            guard let mapView = gesture.view as? MKMapView else {
-                return
-            }
-
-            if gesture.state == .changed {
-                let scale = min(max(gesture.scale, 0.5), 5) // Restrict the scale factor within a reasonable range
-                let span = MKCoordinateSpan(latitudeDelta: mapView.region.span.latitudeDelta / Double(scale),
-                                            longitudeDelta: mapView.region.span.longitudeDelta / Double(scale))
-                let region = MKCoordinateRegion(center: mapView.region.center, span: span)
-                mapView.setRegion(region, animated: true)
-            }
-        }
-
     }
     
     // Custom annotation classes
