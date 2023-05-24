@@ -73,14 +73,26 @@ struct MapView: UIViewRepresentable {
                 }
                 return false
             }
+            
             if let existingAnnotation = annotation as? CustomPointAnnotation {
                 existingAnnotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
             } else {
-                let newAnnotation = CustomPointAnnotation()
-                newAnnotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
-                newAnnotation.title = place.name
-                newAnnotation.identifier = place.id.uuidString
-                mapView.addAnnotation(newAnnotation)
+                var newAnnotation: MKAnnotation?
+                
+                switch place.type {
+                case "mosque":
+                    newAnnotation = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
+                case "alfamart":
+                    newAnnotation = MinimarketAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
+                case "gas-station":
+                    newAnnotation = GasStationAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
+                default:
+                    break
+                }
+                
+                if let newAnnotation = newAnnotation {
+                    mapView.addAnnotation(newAnnotation)
+                }
             }
         }
     }
@@ -150,20 +162,47 @@ class Coordinator: NSObject, MKMapViewDelegate {
         return renderer
     }
     
+    
+    func resizeImage(_ image: UIImage, targetSize: CGSize) -> UIImage {
+        let size = image.size
+
+        let widthRatio  = targetSize.width  / size.width
+        let heightRatio = targetSize.height / size.height
+
+        let scaleFactor = max(widthRatio, heightRatio)
+        let newSize = CGSize(width: size.width * scaleFactor, height: size.height * scaleFactor)
+
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let resizedImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+
+        return resizedImage
+    }
+    
     // Custom Marker Image
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        if let annotation = annotation as? CustomAnnotation {
-            let currentPositionAnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "CurrentPositionAnnotation")
-            currentPositionAnnotationView.image = UIImage(named: "currentPosition")
-            return currentPositionAnnotationView
-        } else if let annotation = annotation as? CustomAnnotation1 {
-            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "Marker1Annotation")
-            marker1AnnotationView.image = UIImage(named: "marker1_marker_image")
-            return marker1AnnotationView
-        } else if let annotation = annotation as? CustomAnnotation2 {
-            let marker2AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "Marker2Annotation")
-            marker2AnnotationView.image = UIImage(named: "marker2_marker_image")
-            return marker2AnnotationView
+        if let annotation = annotation as? GasStationAnnotation {
+            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "GasStationAnnotation")
+            if let image = UIImage(named: "gas-station") {
+                let resizedImage = resizeImage(image, targetSize: CGSize(width: 40, height: 40)) // Set the desired size
+                marker1AnnotationView.image = resizedImage
+                return marker1AnnotationView
+            }
+        } else if let annotation = annotation as? MosqueAnnotation {
+            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "MosqueAnnotation")
+            if let image = UIImage(named: "mosque") {
+                let resizedImage = resizeImage(image, targetSize: CGSize(width: 40, height: 40)) // Set the desired size
+                marker1AnnotationView.image = resizedImage
+                return marker1AnnotationView
+            }
+        } else if let annotation = annotation as? MinimarketAnnotation {
+            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "MinimarketAnnotation")
+            if let image = UIImage(named: "minimarket") {
+                let resizedImage = resizeImage(image, targetSize: CGSize(width: 40, height: 40)) // Set the desired size
+                marker1AnnotationView.image = resizedImage
+                return marker1AnnotationView
+            }
         }
         
         return nil
@@ -186,31 +225,29 @@ class Coordinator: NSObject, MKMapViewDelegate {
 // Custom annotation classes
 class CustomAnnotation: NSObject, MKAnnotation {
     let coordinate: CLLocationCoordinate2D
+    let place: LocationPlace
     
-    init(coordinate: CLLocationCoordinate2D) {
+    init(coordinate: CLLocationCoordinate2D, place: LocationPlace) {
         self.coordinate = coordinate
+        self.place = place
         super.init()
     }
 }
 
-class CustomAnnotation1: NSObject, MKAnnotation {
-    let coordinate: CLLocationCoordinate2D
+class MosqueAnnotation: CustomAnnotation {
     
-    init(coordinate: CLLocationCoordinate2D) {
-        self.coordinate = coordinate
-        super.init()
-    }
 }
 
-class CustomAnnotation2: NSObject, MKAnnotation {
-    let coordinate: CLLocationCoordinate2D
+class MinimarketAnnotation: CustomAnnotation {
     
-    init(coordinate: CLLocationCoordinate2D) {
-        self.coordinate = coordinate
-        super.init()
-    }
+}
+
+class GasStationAnnotation: CustomAnnotation {
+    
 }
 
 class CustomPointAnnotation: MKPointAnnotation {
     var identifier: String?
+    var customTitle: String?
+    var type: String?
 }
