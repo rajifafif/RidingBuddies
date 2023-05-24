@@ -35,6 +35,8 @@ struct MapView: UIViewRepresentable {
     @Binding var currentDestination: LocationPlace?
     @Binding var showRoute: Bool
     @Binding var userTrackingMode: MKUserTrackingMode
+    @Binding var isShowAnnotationOpen: Bool
+    @Binding var currentAnnotation: CustomAnnotation?
     
     private var locationPlaces: [LocationPlace] {
         locationViewModel.locationPlaces
@@ -43,6 +45,14 @@ struct MapView: UIViewRepresentable {
     
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
+        mapView.showsCompass = false
+                
+        // Add compass button
+        let compassButton = MKCompassButton(mapView: mapView)
+        compassButton.frame.origin = CGPoint(x: 20, y: 20)
+        compassButton.compassVisibility = .visible
+        mapView.addSubview(compassButton)
+        
         mapView.delegate = context.coordinator
         
         // Set Default Tracking Mode
@@ -129,7 +139,7 @@ struct MapView: UIViewRepresentable {
             
             // Add the new route overlay
             mapView.addOverlay(route.polyline)
-            print("add route overlay")
+//            print("add route overlay")
             
             // Zoom the map to fit the route
 //            mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 50, right: 50), animated: true)
@@ -167,49 +177,6 @@ class Coordinator: NSObject, MKMapViewDelegate {
         return renderer
     }
     
-    
-    func resizeImage(_ image: UIImage, targetSize: CGSize) -> UIImage {
-        let size = image.size
-
-        let widthRatio  = targetSize.width  / size.width
-        let heightRatio = targetSize.height / size.height
-
-        let scaleFactor = max(widthRatio, heightRatio)
-        let newSize = CGSize(width: size.width * scaleFactor, height: size.height * scaleFactor)
-
-        let renderer = UIGraphicsImageRenderer(size: newSize)
-        let resizedImage = renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: newSize))
-        }
-
-        return resizedImage
-    }
-    
-    // Custom Marker Image
-//    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-//        if annotation is MKUserLocation {
-//            // Return nil to use the default annotation view for the user's location
-//            return nil
-//        } else if let annotation = annotation as? GasStationAnnotation {
-//            let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "GasStationAnnotation") ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "GasStationAnnotation")
-//            annotationView.canShowCallout = true
-//            annotationView.tintColor = .red // Set the desired tint color
-//            return annotationView
-//        } else if let annotation = annotation as? MosqueAnnotation {
-//            let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "MosqueAnnotation") ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "MosqueAnnotation")
-//            annotationView.canShowCallout = true
-//            annotationView.tintColor = .green // Set the desired tint color
-//            return annotationView
-//        } else if let annotation = annotation as? MinimarketAnnotation {
-//            let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "MinimarketAnnotation") ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "MinimarketAnnotation")
-//            annotationView.canShowCallout = true
-//            annotationView.tintColor = .blue // Set the desired tint color
-//            return annotationView
-//        }
-//
-//        return nil
-//    }
-    
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         guard let customAnnotation = annotation as? CustomAnnotation else {
             return nil
@@ -227,13 +194,13 @@ class Coordinator: NSObject, MKMapViewDelegate {
         
         switch customAnnotation.place.type {
             case "mosque":
-                annotationView?.markerTintColor = .green
+                annotationView?.markerTintColor = UIColor(Color("ColorMosque"))
                 annotationView?.glyphImage = UIImage(named: "mosque")
             case "minimarket":
-                annotationView?.markerTintColor = .orange
+                annotationView?.markerTintColor = UIColor(Color("ColorMinimarket"))
             annotationView?.glyphImage = UIImage(named: "minimarket")
             case "gas-station":
-                annotationView?.markerTintColor = .blue
+                annotationView?.markerTintColor = UIColor(Color("ColorGasStation"))
             annotationView?.glyphImage = UIImage(named: "gas-station")
             default:
                 annotationView?.markerTintColor = .red
@@ -252,6 +219,16 @@ class Coordinator: NSObject, MKMapViewDelegate {
         if let annotationView = mapView.view(for: userLocation) {
             annotationView.transform = CGAffineTransform(rotationAngle: CGFloat(heading).toRadians())
         }
+    }
+    
+    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        guard let annotation = view.annotation as? CustomAnnotation else {
+            return
+        }
+        
+        // Handle annotation click
+        parent.isShowAnnotationOpen = true
+        parent.currentAnnotation = annotation
     }
 }
 
@@ -274,4 +251,22 @@ class CustomPointAnnotation: MKPointAnnotation {
     var identifier: String?
     var customTitle: String?
     var type: String?
+}
+
+
+func resizeImage(_ image: UIImage, targetSize: CGSize) -> UIImage {
+    let size = image.size
+
+    let widthRatio  = targetSize.width  / size.width
+    let heightRatio = targetSize.height / size.height
+
+    let scaleFactor = max(widthRatio, heightRatio)
+    let newSize = CGSize(width: size.width * scaleFactor, height: size.height * scaleFactor)
+
+    let renderer = UIGraphicsImageRenderer(size: newSize)
+    let resizedImage = renderer.image { _ in
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+    }
+
+    return resizedImage
 }

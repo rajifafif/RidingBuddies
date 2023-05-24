@@ -35,6 +35,9 @@ struct ContentView: View {
     @State private var currentDestination: LocationPlace?
     @State private var userTrackingMode: MKUserTrackingMode = .followWithHeading
     
+    @State private var isShowAnnotationOpen: Bool = false
+    @State private var currentAnnotation: CustomAnnotation?
+    
     var body: some View {
         VStack {
             ZStack{
@@ -43,7 +46,15 @@ struct ContentView: View {
 //                    destinationCoordinate: $destinationCoordinate,
                     currentDestination: $currentDestination,
                     showRoute: $showRoute,
-                    userTrackingMode: $userTrackingMode
+                    userTrackingMode: $userTrackingMode,
+                    isShowAnnotationOpen: $isShowAnnotationOpen,
+                    currentAnnotation: $currentAnnotation
+                )
+                .gesture(DragGesture()
+                    .onChanged { _ in
+                        // Perform any additional actions when dragging starts
+                        userTrackingMode = .none
+                    }
                 )
                 .edgesIgnoringSafeArea(.all)
                 
@@ -51,73 +62,99 @@ struct ContentView: View {
                     Spacer()
                     
                     VStack{
-                        Button(action: {
-                            locationViewModel.fetchNearestMosque()
-                        }) {
-                            RoundedRectangle(cornerRadius: 10)
-                                .frame(width: 70, height: 70)
-                                .foregroundColor(.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.gray, lineWidth: 2)
-                                )
-                        }
-                        
-                        Button(action: {
-                            locationViewModel.fetchNearestMinimarket()
-                        }) {
-                            RoundedRectangle(cornerRadius: 10)
-                                .frame(width: 70, height: 70)
-                                .foregroundColor(.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.gray, lineWidth: 2)
-                                )
-                        }
-                        
-                        Button(action: {
-                            locationViewModel.fetchNearestGasStations()
-                        }) {
-                            RoundedRectangle(cornerRadius: 10)
-                                .frame(width: 70, height: 70)
-                                .foregroundColor(.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.gray, lineWidth: 2)
-                                )
-                        }
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            // Button action
-                            print("Toggle Route")
-                            showRoute = !showRoute
+                        HStack{
+                            Spacer()
                             
-                        }) {
-                            Circle()
-                                .frame(width: 70)
-                                .foregroundColor(.white)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.gray, lineWidth: 2)
-                                )
-                        }
-                        
-                        Button(action: {
-                            toggleUserTrackingMode()
-                        }) {
-                            Circle()
-                                .frame(width: 70)
-                                .foregroundColor(.white)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.gray, lineWidth: 2)
-                                )
+                            VStack{
+                                Button(action: {
+                                    locationViewModel.fetchNearestMosque()
+                                }) {
+                                    ZStack{
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .frame(width: 50, height: 50)
+                                            .foregroundColor(Color("ColorMosque"))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                        Image("mosque")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 30)
+                                    }
+                                }
+                                
+                                Button(action: {
+                                    locationViewModel.fetchNearestMinimarket()
+                                }) {
+                                    ZStack{
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .frame(width: 50, height: 50)
+                                            .foregroundColor(Color("ColorMinimarket"))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                        Image("minimarket")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 30)
+                                    }
+                                }
+                                
+                                Button(action: {
+                                    locationViewModel.fetchNearestGasStations()
+                                }) {
+                                    ZStack{
+                                        
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .frame(width: 50, height: 50)
+                                            .foregroundColor(Color("ColorGasStation"))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                        Image("gas-station")
+                                            .resizable()
+                                            .frame(width: 30, height: 30)
+                                    }
+                                }
+                            }
                         }
                         
                         Spacer()
-                            .frame(height: 120)
+                        
+                        if userTrackingMode == .none {
+                            HStack {
+                                Spacer()
+                                
+                                Button(action: {
+                                    toggleUserTrackingMode()
+                                }) {
+                                    ZStack{
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .frame(width: 150, height: 50)
+                                            .foregroundColor(.white)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 25)
+                                                    .stroke(Color.gray, lineWidth: 1)
+                                            )
+                                        
+                                        HStack{
+                                            Text("Re-center")
+                                            
+                                            Image("currentPosition")
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(height: 30)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Spacer()
+                            .frame(height: 80)
                     }
                     .padding()
                 }
@@ -143,7 +180,14 @@ struct ContentView: View {
         }
         .onAppear {
             locationViewModel.requestAuthorization()
-            locationViewModel.startUpdatingLocation()
+//            locationViewModel.startUpdatingLocation()
+        }
+        .sheet(isPresented: $isShowAnnotationOpen) {
+            if (currentAnnotation != nil) {
+                Text(currentAnnotation?.place.name ?? "Yeet")
+            } else {
+                Text("No Annotation Selected")
+            }
         }
     }
     
@@ -158,10 +202,10 @@ struct ContentView: View {
     func toggleUserTrackingMode() {
         switch userTrackingMode {
         case .none:
-            userTrackingMode = .follow
-        case .follow:
             userTrackingMode = .followWithHeading
         case .followWithHeading:
+            userTrackingMode = .none
+        case .follow:
             userTrackingMode = .none
         @unknown default:
             userTrackingMode = .followWithHeading
