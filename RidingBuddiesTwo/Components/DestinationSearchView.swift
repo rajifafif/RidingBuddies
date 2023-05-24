@@ -115,7 +115,7 @@ struct DestinationSearchView: View {
                                 }
                                 
                                 print("change current Destination to")
-                                print(locationPlace)
+//                                print(locationPlace)
                                 currentDestination = locationPlace
                                 showRoute = true
                             }) {

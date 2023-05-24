@@ -84,7 +84,7 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
             
             locationPlaces = mapItems.compactMap { mapItem -> LocationPlace? in
-                print(MKMapItem.forCurrentLocation())
+//                print(MKMapItem.forCurrentLocation())
                 let name = mapItem.name
                 let latitude = mapItem.placemark.coordinate.latitude
                 let longitude = mapItem.placemark.coordinate.longitude

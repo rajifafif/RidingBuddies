@@ -56,7 +56,7 @@ struct MapView: UIViewRepresentable {
         // Remove outdated annotations
         var outdatedAnnotations: [MKAnnotation] = []
         for annotation in mapView.annotations {
-            if let customAnnotation = annotation as? CustomPointAnnotation,
+            if let customAnnotation = annotation as? CustomAnnotation,
                let identifier = customAnnotation.identifier,
                !locationPlaces.contains(where: { $0.id.uuidString == identifier }) {
                 outdatedAnnotations.append(customAnnotation)
@@ -66,34 +66,10 @@ struct MapView: UIViewRepresentable {
         
         // Update existing annotations and add new ones
         for place in locationPlaces {
-            let annotation = mapView.annotations.first { (annotation) -> Bool in
-                if let customAnnotation = annotation as? CustomPointAnnotation,
-                   let identifier = customAnnotation.identifier {
-                    return identifier == place.id.uuidString
-                }
-                return false
-            }
-            
-            if let existingAnnotation = annotation as? CustomPointAnnotation {
-                existingAnnotation.coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
-            } else {
-                var newAnnotation: MKAnnotation?
-                
-                switch place.type {
-                case "mosque":
-                    newAnnotation = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
-                case "alfamart":
-                    newAnnotation = MinimarketAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
-                case "gas-station":
-                    newAnnotation = GasStationAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
-                default:
-                    break
-                }
-                
-                if let newAnnotation = newAnnotation {
-                    mapView.addAnnotation(newAnnotation)
-                }
-            }
+            let annotation = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
+            annotation.title = place.name
+//            annotation.subtitle = "subitle brooo"
+            mapView.addAnnotation(annotation)
         }
     }
     
@@ -181,31 +157,60 @@ class Coordinator: NSObject, MKMapViewDelegate {
     }
     
     // Custom Marker Image
+//    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+//        if annotation is MKUserLocation {
+//            // Return nil to use the default annotation view for the user's location
+//            return nil
+//        } else if let annotation = annotation as? GasStationAnnotation {
+//            let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "GasStationAnnotation") ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "GasStationAnnotation")
+//            annotationView.canShowCallout = true
+//            annotationView.tintColor = .red // Set the desired tint color
+//            return annotationView
+//        } else if let annotation = annotation as? MosqueAnnotation {
+//            let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "MosqueAnnotation") ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "MosqueAnnotation")
+//            annotationView.canShowCallout = true
+//            annotationView.tintColor = .green // Set the desired tint color
+//            return annotationView
+//        } else if let annotation = annotation as? MinimarketAnnotation {
+//            let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "MinimarketAnnotation") ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "MinimarketAnnotation")
+//            annotationView.canShowCallout = true
+//            annotationView.tintColor = .blue // Set the desired tint color
+//            return annotationView
+//        }
+//
+//        return nil
+//    }
+    
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        if let annotation = annotation as? GasStationAnnotation {
-            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "GasStationAnnotation")
-            if let image = UIImage(named: "gas-station") {
-                let resizedImage = resizeImage(image, targetSize: CGSize(width: 40, height: 40)) // Set the desired size
-                marker1AnnotationView.image = resizedImage
-                return marker1AnnotationView
-            }
-        } else if let annotation = annotation as? MosqueAnnotation {
-            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "MosqueAnnotation")
-            if let image = UIImage(named: "mosque") {
-                let resizedImage = resizeImage(image, targetSize: CGSize(width: 40, height: 40)) // Set the desired size
-                marker1AnnotationView.image = resizedImage
-                return marker1AnnotationView
-            }
-        } else if let annotation = annotation as? MinimarketAnnotation {
-            let marker1AnnotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "MinimarketAnnotation")
-            if let image = UIImage(named: "minimarket") {
-                let resizedImage = resizeImage(image, targetSize: CGSize(width: 40, height: 40)) // Set the desired size
-                marker1AnnotationView.image = resizedImage
-                return marker1AnnotationView
-            }
+        guard let customAnnotation = annotation as? CustomAnnotation else {
+            return nil
         }
         
-        return nil
+        let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: MKMapViewDefaultAnnotationViewReuseIdentifier, for: annotation) as? MKMarkerAnnotationView
+            annotationView?.annotation = customAnnotation
+            annotationView?.canShowCallout = true
+
+        // Customize the marker's appearance based on the annotation type
+        //        annotationView?.glyphText = customAnnotation.place.name
+        annotationView?.titleVisibility = .visible
+        annotationView?.subtitleVisibility = .visible
+        
+        
+        switch customAnnotation.place.type {
+            case "mosque":
+                annotationView?.markerTintColor = .green
+                annotationView?.glyphImage = UIImage(named: "mosque")
+            case "minimarket":
+                annotationView?.markerTintColor = .orange
+            annotationView?.glyphImage = UIImage(named: "minimarket")
+            case "gas-station":
+                annotationView?.markerTintColor = .blue
+            annotationView?.glyphImage = UIImage(named: "gas-station")
+            default:
+                annotationView?.markerTintColor = .red
+        }
+
+        return annotationView
     }
     
     // Update
@@ -223,14 +228,14 @@ class Coordinator: NSObject, MKMapViewDelegate {
 
 
 // Custom annotation classes
-class CustomAnnotation: NSObject, MKAnnotation {
-    let coordinate: CLLocationCoordinate2D
+class CustomAnnotation: MKPointAnnotation {
+    var identifier: String?
     let place: LocationPlace
     
     init(coordinate: CLLocationCoordinate2D, place: LocationPlace) {
-        self.coordinate = coordinate
         self.place = place
         super.init()
+        self.coordinate = coordinate
     }
 }
 
