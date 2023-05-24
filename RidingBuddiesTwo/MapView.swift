@@ -16,6 +16,20 @@ extension CGFloat {
     }
 }
 
+struct CoordinateWrapper: Hashable, Equatable {
+    let coordinate: CLLocationCoordinate2D
+
+    static func ==(lhs: CoordinateWrapper, rhs: CoordinateWrapper) -> Bool {
+        return lhs.coordinate.latitude == rhs.coordinate.latitude &&
+            lhs.coordinate.longitude == rhs.coordinate.longitude
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(coordinate.latitude)
+        hasher.combine(coordinate.longitude)
+    }
+}
+
 struct MapView: UIViewRepresentable {
     @ObservedObject var locationViewModel: LocationViewModel
     @Binding var currentDestination: LocationPlace?
@@ -53,25 +67,40 @@ struct MapView: UIViewRepresentable {
     }
     
     private func updateAnnotations(on mapView: MKMapView) {
-        // Remove outdated annotations
-        var outdatedAnnotations: [MKAnnotation] = []
-        for annotation in mapView.annotations {
-            if let customAnnotation = annotation as? CustomAnnotation,
-               let identifier = customAnnotation.identifier,
-               !locationPlaces.contains(where: { $0.id.uuidString == identifier }) {
-                outdatedAnnotations.append(customAnnotation)
+        // Get the current set of annotation coordinates
+        let currentAnnotationCoordinates = Set(mapView.annotations.compactMap { ($0 as? CustomAnnotation)?.coordinateWrapper })
+        
+        // Get the new set of annotation coordinates
+        let newAnnotationCoordinates = Set(locationPlaces.map { CoordinateWrapper(coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)) })
+        
+        // Find the coordinates that are new and not already present
+        let addedCoordinates = newAnnotationCoordinates.subtracting(currentAnnotationCoordinates)
+        
+        // Find the coordinates that have been removed
+        let removedCoordinates = currentAnnotationCoordinates.subtracting(newAnnotationCoordinates)
+        
+        // Create and add new annotations for the added coordinates
+        for place in locationPlaces {
+            let coordinate = CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude)
+            let coordinateWrapper = CoordinateWrapper(coordinate: coordinate)
+            
+            if addedCoordinates.contains(coordinateWrapper) {
+                let annotation = CustomAnnotation(coordinate: coordinate, place: place)
+                annotation.title = place.name
+                mapView.addAnnotation(annotation)
             }
         }
-        mapView.removeAnnotations(outdatedAnnotations)
         
-        // Update existing annotations and add new ones
-        for place in locationPlaces {
-            let annotation = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), place: place)
-            annotation.title = place.name
-//            annotation.subtitle = "subitle brooo"
-            mapView.addAnnotation(annotation)
+        // Remove annotations for the removed coordinates
+        for annotation in mapView.annotations {
+            if let customAnnotation = annotation as? CustomAnnotation,
+               let coordinateWrapper = customAnnotation.coordinateWrapper,
+               removedCoordinates.contains(coordinateWrapper) {
+                mapView.removeAnnotation(customAnnotation)
+            }
         }
     }
+
     
     private func showDirections(on mapView: MKMapView, to destinationCoordinate: CLLocationCoordinate2D) {
         guard let userCoordinate = locationViewModel.currentLocation?.coordinate else {
@@ -231,24 +260,14 @@ class Coordinator: NSObject, MKMapViewDelegate {
 class CustomAnnotation: MKPointAnnotation {
     var identifier: String?
     let place: LocationPlace
+    let coordinateWrapper: CoordinateWrapper?
     
     init(coordinate: CLLocationCoordinate2D, place: LocationPlace) {
         self.place = place
+        self.coordinateWrapper = CoordinateWrapper(coordinate: coordinate)
         super.init()
         self.coordinate = coordinate
     }
-}
-
-class MosqueAnnotation: CustomAnnotation {
-    
-}
-
-class MinimarketAnnotation: CustomAnnotation {
-    
-}
-
-class GasStationAnnotation: CustomAnnotation {
-    
 }
 
 class CustomPointAnnotation: MKPointAnnotation {
