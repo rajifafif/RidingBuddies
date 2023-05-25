@@ -49,7 +49,7 @@ struct MapView: UIViewRepresentable {
                 
         // Add compass button
         let compassButton = MKCompassButton(mapView: mapView)
-        compassButton.frame.origin = CGPoint(x: 20, y: 20)
+        compassButton.frame.origin = CGPoint(x: 20, y: 65)
         compassButton.compassVisibility = .visible
         mapView.addSubview(compassButton)
         
@@ -81,7 +81,7 @@ struct MapView: UIViewRepresentable {
         let currentAnnotationCoordinates = Set(mapView.annotations.compactMap { ($0 as? CustomAnnotation)?.coordinateWrapper })
         
         // Get the new set of annotation coordinates
-        let newAnnotationCoordinates = Set(locationPlaces.map { CoordinateWrapper(coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)) })
+        var newAnnotationCoordinates = Set(locationPlaces.map { CoordinateWrapper(coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)) })
         
         // Find the coordinates that are new and not already present
         let addedCoordinates = newAnnotationCoordinates.subtracting(currentAnnotationCoordinates)
@@ -109,6 +109,15 @@ struct MapView: UIViewRepresentable {
                 mapView.removeAnnotation(customAnnotation)
             }
         }
+        
+        // Add destinationCoordinate as Annotation
+        
+//        if let currentDestination = currentDestination {
+//            print("Add Goal")
+//            let annotation = CustomAnnotation(coordinate: CLLocationCoordinate2D(latitude: currentDestination.latitude, longitude: currentDestination.longitude), place: LocationPlace(name: "Goal", latitude: currentDestination.latitude, longitude: currentDestination.longitude, type: "Goal", distanceInKm: 0.0))
+//            annotation.title = "goal"
+//            mapView.addAnnotation(annotation)
+//        }
     }
 
     private let directionsCache = NSCache<NSString, MKRoute>()

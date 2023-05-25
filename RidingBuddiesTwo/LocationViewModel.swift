@@ -125,7 +125,7 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func fetchNearestMosque() {
         self.searchNearestLocationIsLoading = true
-        var _ = fetchNearestByString(queryString: "Church") { locationPlaces in
+        var _ = fetchNearestByString(queryString: "Mosque") { locationPlaces in
             let places = locationPlaces.compactMap { locationPlace -> LocationPlace? in
                 // Add Type
                 return LocationPlace(
