@@ -182,9 +182,11 @@ struct ContentView: View {
             if (currentAnnotation != nil) {
                 Text(currentAnnotation?.place.name ?? "Yeet")
                 Button(action: {
-                    currentDestination = currentAnnotation?.place
-                    showRoute = true
-                    isShowAnnotationOpen = false
+                    if let annotation = currentAnnotation {
+                        currentDestination = annotation.place
+                        showRoute = true
+                        isShowAnnotationOpen = false
+                    }
                 }) {
                     Text("Set Destination")
                 }

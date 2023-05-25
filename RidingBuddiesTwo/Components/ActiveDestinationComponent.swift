@@ -25,6 +25,7 @@ struct ActiveDestinationComponent: View {
                         if let destinationName = currentDestination?.name {
                             Text(destinationName)
                                 .font(.system(size: 24))
+                                .foregroundColor(.black)
                                 .bold()
                             
                             Text("\(distanceDoubleToString(distance: currentDestination?.distanceInKm)) km (\(estimateInMinutes(distanceInKm: currentDestination?.distanceInKm)) min)")
