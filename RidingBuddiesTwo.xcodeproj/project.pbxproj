@@ -299,7 +299,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RidingBuddiesTwo/Info.plist;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The Description";
+				INFOPLIST_KEY_CFBundleDisplayName = "Riding Buddies";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Get your current location to provide best direction";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -330,7 +332,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RidingBuddiesTwo/Info.plist;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The Description";
+				INFOPLIST_KEY_CFBundleDisplayName = "Riding Buddies";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Get your current location to provide best direction";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

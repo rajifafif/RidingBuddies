@@ -30,7 +30,20 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func requestAuthorization() {
-        locationManager.requestWhenInUseAuthorization()
+        if CLLocationManager.locationServicesEnabled() {
+            switch CLLocationManager.authorizationStatus() {
+            case .notDetermined:
+                locationManager.requestWhenInUseAuthorization()
+            case .restricted, .denied:
+                showLocationPermissionDeniedAlert()
+            case .authorizedWhenInUse, .authorizedAlways:
+                startUpdatingLocation()
+            @unknown default:
+                break
+            }
+        } else {
+            showLocationServicesDisabledAlert()
+        }
     }
     
     func startUpdatingLocation() {
@@ -61,6 +74,49 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Location manager error: \(error.localizedDescription)")
+    }
+    
+    private func showLocationPermissionDeniedAlert() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return
+        }
+        
+        let alert = UIAlertController(
+            title: "Location Permission Denied",
+            message: "To enable location services, please go to Settings and allow access to your location.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .default))
+        alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
+            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
+                return
+            }
+            
+            if UIApplication.shared.canOpenURL(settingsUrl) {
+                UIApplication.shared.open(settingsUrl)
+            }
+        })
+        
+        window.rootViewController?.present(alert, animated: true)
+    }
+    
+    private func showLocationServicesDisabledAlert() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return
+        }
+        
+        let alert = UIAlertController(
+            title: "Location Services Disabled",
+            message: "Please enable location services in your device settings to use this app.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        
+        window.rootViewController?.present(alert, animated: true)
     }
     
     func fetchNearestByString(queryString: String, completion: @escaping ([LocationPlace]) -> Void) {
