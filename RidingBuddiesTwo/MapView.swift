@@ -111,6 +111,10 @@ struct MapView: UIViewRepresentable {
         }
     }
 
+    private let directionsCache = NSCache<NSString, MKRoute>()
+    @State var lastDirectionSourceCoordinate: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
+    @State var lastDirectionDestinationCoordinate: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
+    @State var lastDirectionRoute: MKRoute = MKRoute()
     
     private func showDirections(on mapView: MKMapView, to destinationCoordinate: CLLocationCoordinate2D) {
         guard let userCoordinate = locationViewModel.currentLocation?.coordinate else {
@@ -128,22 +132,36 @@ struct MapView: UIViewRepresentable {
         request.destination = destinationMapItem
         request.transportType = .automobile
         
+        if (CalculateDistance(sourceCoordinate: userCoordinate, destinationCoordinate: lastDirectionSourceCoordinate) < 5 &&
+            CalculateDistance(sourceCoordinate: destinationCoordinate, destinationCoordinate: lastDirectionDestinationCoordinate) < 5 ) {
+            addRouteToMap(route: lastDirectionRoute, on: mapView)
+            return
+        }
+        
         let directions = MKDirections(request: request)
         directions.calculate { response, error in
             guard let route = response?.routes.first else {
                 return
             }
             
-            // Remove any existing overlays
-            mapView.removeOverlays(mapView.overlays)
+            // Cache the calculated route
+            lastDirectionSourceCoordinate = userCoordinate
+            lastDirectionDestinationCoordinate = destinationCoordinate
+            lastDirectionRoute = route
             
             // Add the new route overlay
-            mapView.addOverlay(route.polyline)
-//            print("add route overlay")
-            
-            // Zoom the map to fit the route
-//            mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 50, right: 50), animated: true)
+            self.addRouteToMap(route: route, on: mapView)
         }
+    }
+    private func addRouteToMap(route: MKRoute, on mapView: MKMapView) {
+        // Remove any existing overlays
+        mapView.removeOverlays(mapView.overlays)
+        
+        // Add the new route overlay
+        mapView.addOverlay(route.polyline)
+        
+        // Zoom the map to fit the route
+//        mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 50, right: 50), animated: true)
     }
     
     func reCenterMap(_ uiView: MKMapView) {
@@ -211,9 +229,9 @@ class Coordinator: NSObject, MKMapViewDelegate {
     
     // Update
     func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-        guard let heading = parent.locationViewModel.currentHeading?.trueHeading else {
-            return
-        }
+//        guard let heading = parent.locationViewModel.currentHeading?.trueHeading else {
+//            return
+//        }
         
         // Rotate the current position marker based on the user's heading
 //        if let annotationView = mapView.view(for: userLocation) {

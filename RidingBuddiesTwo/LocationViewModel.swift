@@ -88,7 +88,7 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 let name = mapItem.name
                 let latitude = mapItem.placemark.coordinate.latitude
                 let longitude = mapItem.placemark.coordinate.longitude
-                let distanceInKm = self.CalculateDistance(sourceCoordinate: currentLocation.coordinate, destinationCoordinate: mapItem.placemark.coordinate) / 1000
+                let distanceInKm = CalculateDistance(sourceCoordinate: currentLocation.coordinate, destinationCoordinate: mapItem.placemark.coordinate) / 1000
                 
 //                print(distanceInKm)
                 
@@ -176,22 +176,22 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     distanceInKm: locationPlace.distanceInKm)
             }
             
-            self.searchResults = foundDestinations
+//            self.searchResults = foundDestinations
             
-//            DispatchQueue.main.async {
-//                self.searchResults = foundDestinations
-//            }
+            DispatchQueue.main.async {
+                self.searchResults = foundDestinations
+            }
         }
-    }
-    
-    func CalculateDistance(sourceCoordinate: CLLocationCoordinate2D, destinationCoordinate: CLLocationCoordinate2D) -> CLLocationDistance {
-        let sourceLocation = CLLocation(latitude: sourceCoordinate.latitude, longitude: sourceCoordinate.longitude)
-        let destinationLocation = CLLocation(latitude: destinationCoordinate.latitude, longitude: destinationCoordinate.longitude)
-
-        return sourceLocation.distance(from: destinationLocation)
     }
 }
 
+
+func CalculateDistance(sourceCoordinate: CLLocationCoordinate2D, destinationCoordinate: CLLocationCoordinate2D) -> CLLocationDistance {
+    let sourceLocation = CLLocation(latitude: sourceCoordinate.latitude, longitude: sourceCoordinate.longitude)
+    let destinationLocation = CLLocation(latitude: destinationCoordinate.latitude, longitude: destinationCoordinate.longitude)
+
+    return sourceLocation.distance(from: destinationLocation)
+}
 
 func distanceDoubleToString(distance: Double?) -> String {
     let numberFormatter = NumberFormatter()
