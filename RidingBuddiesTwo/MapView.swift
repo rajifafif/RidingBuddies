@@ -172,8 +172,8 @@ class Coordinator: NSObject, MKMapViewDelegate {
     // Route
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         let renderer = MKPolylineRenderer(overlay: overlay)
-        renderer.strokeColor = .blue
-        renderer.lineWidth = 3.0
+        renderer.strokeColor = UIColor(red: (CGFloat(21) / 255.0), green: (CGFloat(158) / 255.0), blue: (CGFloat(254) / 255.0), alpha: 1.0)
+        renderer.lineWidth = 4.0
         return renderer
     }
     
