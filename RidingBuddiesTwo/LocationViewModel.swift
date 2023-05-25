@@ -88,8 +88,11 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 let name = mapItem.name
                 let latitude = mapItem.placemark.coordinate.latitude
                 let longitude = mapItem.placemark.coordinate.longitude
+                let distanceInKm = self.CalculateDistance(sourceCoordinate: currentLocation.coordinate, destinationCoordinate: mapItem.placemark.coordinate) / 1000
                 
-                return LocationPlace(name: name ?? "", latitude: latitude, longitude: longitude, type: "")
+//                print(distanceInKm)
+                
+                return LocationPlace(name: name ?? "", latitude: latitude, longitude: longitude, type: "", distanceInKm: distanceInKm)
             }
             
             completion(locationPlaces)
@@ -111,7 +114,8 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     name: locationPlace.name,
                     latitude: locationPlace.latitude,
                     longitude: locationPlace.longitude,
-                    type: "gas-station")
+                    type: "gas-station",
+                    distanceInKm: locationPlace.distanceInKm)
             }
             
             self.addToPlaces(locationPlaces: places)
@@ -128,7 +132,8 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     name: locationPlace.name,
                     latitude: locationPlace.latitude,
                     longitude: locationPlace.longitude,
-                    type: "mosque")
+                    type: "mosque",
+                    distanceInKm: locationPlace.distanceInKm)
             }
             
             self.addToPlaces(locationPlaces: places)
@@ -145,7 +150,8 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     name: locationPlace.name,
                     latitude: locationPlace.latitude,
                     longitude: locationPlace.longitude,
-                    type: "minimarket")
+                    type: "minimarket",
+                    distanceInKm: locationPlace.distanceInKm)
             }
             
             self.addToPlaces(locationPlaces: places)
@@ -166,7 +172,8 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     name: locationPlace.name,
                     latitude: locationPlace.latitude,
                     longitude: locationPlace.longitude,
-                    type: "")
+                    type: "",
+                    distanceInKm: locationPlace.distanceInKm)
             }
             
             self.searchResults = foundDestinations
@@ -176,4 +183,46 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
 //            }
         }
     }
+    
+    func CalculateDistance(sourceCoordinate: CLLocationCoordinate2D, destinationCoordinate: CLLocationCoordinate2D) -> CLLocationDistance {
+        let sourceLocation = CLLocation(latitude: sourceCoordinate.latitude, longitude: sourceCoordinate.longitude)
+        let destinationLocation = CLLocation(latitude: destinationCoordinate.latitude, longitude: destinationCoordinate.longitude)
+
+        return sourceLocation.distance(from: destinationLocation)
+    }
+}
+
+
+func distanceDoubleToString(distance: Double?) -> String {
+    let numberFormatter = NumberFormatter()
+    numberFormatter.numberStyle = .decimal
+    numberFormatter.maximumFractionDigits = 2
+    
+    if let distance = distance {
+        let distanceNumber = NSNumber(value: distance)
+        if let stringValue = numberFormatter.string(from: distanceNumber) {
+            return stringValue
+        }
+    }
+    
+    return "-"
+}
+
+func estimateInMinutes(distanceInKm: Double?) -> String {
+    let averageMotorcycleSpeed = 52.0 // km/h
+    
+    if let distance = distanceInKm {
+        let estimatedTimeInHours = distance / averageMotorcycleSpeed
+        let estimatedTimeInMinutes = estimatedTimeInHours * 60
+        
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        numberFormatter.maximumFractionDigits = 0
+        
+        if let stringValue = numberFormatter.string(from: NSNumber(value: estimatedTimeInMinutes)) {
+            return stringValue
+        }
+    }
+    
+    return "-"
 }

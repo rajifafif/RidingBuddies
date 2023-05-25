@@ -216,9 +216,9 @@ class Coordinator: NSObject, MKMapViewDelegate {
         }
         
         // Rotate the current position marker based on the user's heading
-        if let annotationView = mapView.view(for: userLocation) {
-            annotationView.transform = CGAffineTransform(rotationAngle: CGFloat(heading).toRadians())
-        }
+//        if let annotationView = mapView.view(for: userLocation) {
+//            annotationView.transform = CGAffineTransform(rotationAngle: CGFloat(heading).toRadians())
+//        }
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {

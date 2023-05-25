@@ -26,13 +26,15 @@ struct ActiveDestinationComponent: View {
                             Text(destinationName)
                                 .font(.system(size: 24))
                                 .bold()
+                            
+                            Text("\(distanceDoubleToString(distance: currentDestination?.distanceInKm)) km (\(estimateInMinutes(distanceInKm: currentDestination?.distanceInKm)) min)")
+                                .foregroundColor(.black)
                         } else {
                             Text("No destination selected")
                                 .font(.system(size: 24))
                                 .bold()
                         }
                         
-                        Text("5km (10 min)")
                     }
                     
                     Spacer()
@@ -64,6 +66,6 @@ struct ActiveDestinationComponent: View {
 struct ActiveDestinationComponent_Previews: PreviewProvider {
     static var previews: some View {
 //        ContentView()
-        ActiveDestinationComponent(currentDestination: .constant(LocationPlace(name: "Hello", latitude: 0.3, longitude: 0.3, type: "")))
+        ActiveDestinationComponent(currentDestination: .constant(LocationPlace(name: "Hello", latitude: 0.3, longitude: 0.3, type: "", distanceInKm: 0.0)))
     }
 }

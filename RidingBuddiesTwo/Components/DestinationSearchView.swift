@@ -44,7 +44,7 @@ struct DestinationSearchView: View {
                                         isExpanded = false
                                     } else {
                                         // Collapse the sheet
-                                        height = UIScreen.main.bounds.height - 100
+                                        height = UIScreen.main.bounds.height - 300
                                         isExpanded = true
                                     }
                                 }
@@ -72,7 +72,7 @@ struct DestinationSearchView: View {
                                 .foregroundColor(.black)
                                 .onTapGesture {
                                     withAnimation {
-                                        height = UIScreen.main.bounds.height - 100
+                                        height = UIScreen.main.bounds.height - 300
                                         isExpanded = true
                                     }
                                 }
@@ -85,7 +85,7 @@ struct DestinationSearchView: View {
                         // Search Button
                         Button(action: {
                             withAnimation {
-                                height = UIScreen.main.bounds.height - 100
+                                height = UIScreen.main.bounds.height - 300
                                 isExpanded = true
                             }
                             
@@ -139,7 +139,7 @@ struct DestinationSearchView_Previews: PreviewProvider {
         DestinationSearchView(
             searchText: .constant(""),
             onSearch: {},
-            currentDestination: .constant(LocationPlace(name: "Default", latitude: 0.3, longitude: 0.3, type: "aksjdn")),
+            currentDestination: .constant(LocationPlace(name: "Default", latitude: 0.3, longitude: 0.3, type: "aksjdn", distanceInKm: 0.0)),
             showRoute: .constant(false)
         )
         .environmentObject(LocationViewModel())

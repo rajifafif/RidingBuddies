@@ -14,11 +14,10 @@ struct LocationPlace: Identifiable, Hashable {
     let latitude: Double
     let longitude: Double
     let type: String?
+    let distanceInKm: Double?
 }
 
 struct ContentView: View {
-//    @StateObject private var coordinator = Coordinator()
-    
     @State private var destinationCoordinate: CLLocationCoordinate2D?
     @State private var showRoute = false
     
@@ -26,11 +25,9 @@ struct ContentView: View {
     @StateObject private var locationViewModel = LocationViewModel()
     @State private var locationPlaces: [LocationPlace] = []
     
-    //    @State private var gasStations: [GasStation] = []
-    
     @State private var searchText = ""
     @State private var isShowingSheet = false
-    @State private var searchResults: [LocationPlace] = []
+    @State private var searchregResults: [LocationPlace] = []
     
     @State private var currentDestination: LocationPlace?
     @State private var userTrackingMode: MKUserTrackingMode = .followWithHeading
@@ -43,7 +40,6 @@ struct ContentView: View {
             ZStack{
                 MapView(
                     locationViewModel: locationViewModel,
-//                    destinationCoordinate: $destinationCoordinate,
                     currentDestination: $currentDestination,
                     showRoute: $showRoute,
                     userTrackingMode: $userTrackingMode,
@@ -152,9 +148,9 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        
-                        Spacer()
-                            .frame(height: 80)
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            Spacer().frame(height: currentDestination != nil ? 100 : 80)
+                        }
                     }
                     .padding()
                 }
@@ -178,13 +174,20 @@ struct ContentView: View {
                 }
             }
         }
+        .modifier(KeyboardAdaptive())
         .onAppear {
             locationViewModel.requestAuthorization()
-//            locationViewModel.startUpdatingLocation()
         }
         .sheet(isPresented: $isShowAnnotationOpen) {
             if (currentAnnotation != nil) {
                 Text(currentAnnotation?.place.name ?? "Yeet")
+                Button(action: {
+                    currentDestination = currentAnnotation?.place
+                    showRoute = true
+                    isShowAnnotationOpen = false
+                }) {
+                    Text("Set Destination")
+                }
             } else {
                 Text("No Annotation Selected")
             }
@@ -216,5 +219,51 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+import Combine
+
+final class KeyboardResponder: ObservableObject {
+    private var cancellables = Set<AnyCancellable>()
+
+    @Published private(set) var keyboardHeight: CGFloat = 0
+
+    func addObserver() {
+        NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)
+            .compactMap { notification -> CGFloat? in
+                guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
+                    return nil
+                }
+                return frame.height
+            }
+            .sink { [weak self] height in
+                self?.keyboardHeight = height
+            }
+            .store(in: &cancellables)
+    }
+
+    func removeObserver() {
+        cancellables.removeAll()
+    }
+}
+
+struct KeyboardAdaptive: ViewModifier {
+    @ObservedObject private var keyboard = KeyboardResponder()
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.bottom, keyboard.keyboardHeight)
+            .edgesIgnoringSafeArea(keyboard.keyboardHeight > 0 ? .bottom : [])
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    keyboard.addObserver()
+                }
+            }
+            .onDisappear {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    keyboard.removeObserver()
+                }
+            }
     }
 }
