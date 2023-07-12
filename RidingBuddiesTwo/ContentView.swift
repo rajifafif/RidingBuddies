@@ -99,7 +99,9 @@ struct ContentView: View {
                                 }
                                 
                                 Button(action: {
-                                    locationViewModel.fetchNearestGasStations()
+//                                    locationViewModel.fetchNearestGasStations()
+                                    
+                                    locationViewModel.fetchFixPlaces()
                                 }) {
                                     ZStack{
                                         

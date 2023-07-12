@@ -81,7 +81,7 @@ struct MapView: UIViewRepresentable {
         let currentAnnotationCoordinates = Set(mapView.annotations.compactMap { ($0 as? CustomAnnotation)?.coordinateWrapper })
         
         // Get the new set of annotation coordinates
-        var newAnnotationCoordinates = Set(locationPlaces.map { CoordinateWrapper(coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)) })
+        let newAnnotationCoordinates = Set(locationPlaces.map { CoordinateWrapper(coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)) })
         
         // Find the coordinates that are new and not already present
         let addedCoordinates = newAnnotationCoordinates.subtracting(currentAnnotationCoordinates)

@@ -30,8 +30,8 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func requestAuthorization() {
-        if CLLocationManager.locationServicesEnabled() {
-            switch CLLocationManager.authorizationStatus() {
+        let status = locationManager.authorizationStatus
+            switch status {
             case .notDetermined:
                 locationManager.requestWhenInUseAuthorization()
             case .restricted, .denied:
@@ -39,11 +39,8 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             case .authorizedWhenInUse, .authorizedAlways:
                 startUpdatingLocation()
             @unknown default:
-                break
+                showLocationServicesDisabledAlert()
             }
-        } else {
-            showLocationServicesDisabledAlert()
-        }
     }
     
     func startUpdatingLocation() {
@@ -159,6 +156,47 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         DispatchQueue.main.async {
             self.locationPlaces = locationPlaces
         }
+    }
+    
+    func fetchFixPlaces() {
+        addToPlaces(locationPlaces: [
+            LocationPlace(
+                name: "Gate B",
+                latitude: -6.289114477903174,
+                longitude: 106.77528123586164,
+                type: "gas-station",
+                distanceInKm: 0),
+            LocationPlace(
+                name: "Gate A",
+                latitude: -6.289089059910621,
+                longitude: 106.77436374276293,
+                type: "gas-station",
+                distanceInKm: 0),
+            LocationPlace(
+                name: "Gate D",
+                latitude: -6.289425650764598,
+                longitude: 106.77448779492995,
+                type: "gas-station",
+                distanceInKm: 0),
+            LocationPlace(
+                name: "Gate F",
+                latitude: -6.289442980188797,
+                longitude: 106.7753621950688,
+                type: "gas-station",
+                distanceInKm: 0),
+            LocationPlace(
+                name: "Lift Gate B",
+                latitude: -6.289442980188797,
+                longitude: 106.7753621950688,
+                type: "gas-station",
+                distanceInKm: 0),
+            LocationPlace(
+                name: "Lift 1 Lagi",
+                latitude: -6.28940818503227,
+                longitude: 106.77524469012467,
+                type: "gas-station",
+                distanceInKm: 0),
+        ])
     }
     
     func fetchNearestGasStations() {
